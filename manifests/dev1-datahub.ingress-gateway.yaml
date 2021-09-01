@@ -1,0 +1,14 @@
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: IngressGateway
+metadata:
+  name: dev1-datahub
+  namespace: consul
+spec:
+  tls:
+    enabled: true
+  listeners:
+    - port: 443
+      protocol: http
+      services:
+        - name: static-server
+          hosts: ["static-server.ingress.default.dev1-datahub.consul"] # <k8s_service>.ingress.<consul_ns>.<ingress_gateway>.<k8s_ns_for_ingress_gateway>

@@ -1,0 +1,124 @@
+global:
+  name: consul
+  imageK8S: harbor.pks.tm.dev1.premera.cloud/ecs/consul-k8s:0.23.0
+  image: harbor.pks.tm.dev1.premera.cloud/ecs/consul-enterprise:1.9.2-ent
+  imageEnvoy: harbor.pks.tm.dev1.premera.cloud/ecs/envoy-alpine:v1.16.0
+  tls:
+    enabled: true
+    enableAutoEncrypt: true
+    httpsOnly: false
+    caCert:
+      secretName: consul-federation
+      secretKey: caCert
+    caKey:
+      secretName: consul-federation
+      secretKey: caKey
+  gossipEncryption:
+    secretName: "consul-federation"
+    secretKey: "gossipEncryptionKey"
+  federation:
+    enabled: true
+  acls:
+    manageSystemACLs: true
+    replicationToken:
+      secretName: "consul-federation"
+      secretKey: "replicationToken"
+  enablePodSecurityPolicies: true
+controller:
+    enabled: true
+server:
+  enterpriseLicense:
+    secretName: 'consul-ent-license'
+    secretKey: 'key'
+  storageClass: consul-storageclass
+  extraVolumes:
+  - type: secret
+    name: consul-federation
+    items:
+      - key: serverConfigJSON
+        path: config.json
+    load: true
+  extraConfig: |
+    {
+      "audit": {
+        "enabled": true,
+        "sink": [
+          {
+            "stdout": [
+              {
+                "type": "file",
+                "format": "json",
+                "path": "/dev/stdout",
+                "delivery_guarantee": "best-effort"
+              }
+            ]
+          }
+        ]
+      }
+    }
+syncCatalog:
+  k8sAllowNamespaces: ["*"]
+connectInject:
+  enabled: true
+meshGateway:
+  enabled: true
+  service:
+    annotations: |
+      "service.beta.kubernetes.io/azure-load-balancer-internal": "true"
+      "service.beta.kubernetes.io/azure-load-balancer-internal-subnet": "dev1-pks-loadbalancers"
+client:
+  enabled: true
+  snapshotAgent:
+    enabled: true
+    configSecret:
+      secretName: consul-snapshot-config
+      secretKey: config
+ingressGateways:
+  enabled: true
+  gateways:
+  - name: dev1-datahub
+  defaults:
+    replicas: 3
+    service:
+      type: LoadBalancer
+      ports:
+        - port: 443
+          nodePort: null
+        - port: 8080
+          nodePort: null
+        - port: 8443
+          nodePort: null
+      annotations: |
+        "service.beta.kubernetes.io/azure-load-balancer-internal": "true"
+        "service.beta.kubernetes.io/azure-load-balancer-internal-subnet": "dev1-pks-loadbalancers"
+    serviceAccount:
+      annotations: null
+    resources:
+      requests:
+        memory: "100Mi"
+        cpu: "100m"
+      limits:
+        memory: "100Mi"
+        cpu: "100m"
+    initCopyConsulContainer:
+      resources:
+        requests:
+          memory: "25Mi"
+          cpu: "50m"
+        limits:
+          memory: "150Mi"
+          cpu: "50m"
+    affinity: |
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app: {{ template "consul.name" . }}
+                release: "{{ .Release.Name }}"
+                component: ingress-gateway
+            topologyKey: kubernetes.io/hostname
+    tolerations: null
+    nodeSelector: null
+    priorityClassName: ""
+    annotations: null
+    consulNamespace: "consul"

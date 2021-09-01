@@ -1,0 +1,13 @@
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: ServiceIntentions
+metadata:
+  name: static-server # service name desired to be accessed thru ingress controller
+  namespace: static-gateway # namespace where service exists
+spec:
+  destination:
+    name: static-server # service name desired to be accessed thru ingress controller
+  sources: # add 1 source for each cluster in the env
+    - name: dev1-datahub # name of cluster specific ingress gateway
+      action: allow
+    # - name: test1-datahub # name of cluster specific ingress gateway
+    #   action: allow

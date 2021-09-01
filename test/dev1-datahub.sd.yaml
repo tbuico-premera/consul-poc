@@ -1,0 +1,7 @@
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: ServiceDefaults
+metadata:
+  name: static-server # service name desired to be accessed thru ingress controller
+  namespace: static-gateway # namespace where service exists
+spec:
+  protocol: "http"
